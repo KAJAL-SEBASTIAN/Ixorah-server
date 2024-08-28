@@ -13,8 +13,11 @@ router.post('/chat', userController.sendMessage);
 router.post('/addIndustry', userController.addIndustry);
 router.get('/chat-history/:userId', userController.getChatHistory);
 router.post('/reset', userController.resetPassword)
-router.get('/profile/:userId', userController.getUserProfileById);
+// router.get('/profile', userController.getUserProfileById);
+router.get('/profile', userController.getUserProfileById);
+
 router.delete('/history', userController.deleteChatHistory);
 router.post('/updateProfile', upload.single('profileImage'), userController.updateProfile);
+router.delete('/delete-account', userController.deleteAccount);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const User = require("../Model/user.model");
+const Userdata = require("../Model/userData.model")
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const uuid = require("uuid");
@@ -9,6 +10,7 @@ const axios = require("axios");
 const { getIo } = require("../socket");
 const { OpenAI } = require("openai");
 const { TokenExpiredError } = jwt;
+
 
 
 const openai = new OpenAI({
@@ -37,9 +39,20 @@ exports.Register = async (req, res) => {
       userCompanie: Companie,
       userindustry: industry,
     });
-
+    
+    const userdata = new Userdata({
+       userId: uuid.v4().slice(0, 3),
+      useremail: email,
+      userpassword: hashedPassword,
+      userName: Name,
+      userphoneNumber: phoneNumber,
+      userCompanie: Companie,
+      userindustry: industry,
+    });
+    await userdata.save();
     await newUser.save();
-
+ 
+    
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     console.error("Error in registration:", error);
@@ -51,7 +64,7 @@ exports.userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ useremail: email });
+    const user = await Userdata.findOne({ useremail: email });
     if (!user) {
       return res.status(400).json({ message: "Invalid email" });
     }
@@ -75,7 +88,7 @@ exports.userLogin = async (req, res) => {
       userindustryLength,
       useremail,
     });
-  } catch (error) {
+  } catch (error) { 
     console.error("Error in login:", error);
     res.status(500).json({ message: "Server error" });
   }
@@ -131,10 +144,11 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json("Server error");
   }
 };
+
 exports.getUserProfileById = async (req, res) => {
   try {
-    const userId = req.params.userId;
-    const user = await User.findOne({ userId });
+    const email = req.query.email; // Get the user's email from the query parameters
+    const user = await Userdata.findOne({ useremail: email });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -146,6 +160,22 @@ exports.getUserProfileById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// exports.getUserProfileById = async (req, res) => {
+//   try {
+//     const email = req.body.email;
+//     const user = await User.find({useremail: email});
+
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     res.status(200).json(user);
+//   } catch (error) {
+//     console.error("Error fetching user profile:", error);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -201,9 +231,10 @@ exports.addIndustry = async (req, res) => {
   try {
     const { email, industry } = req.body;
 
-    const user = await User.findOne({ useremail: email });
+    const user = await User.findOne({ useremail: email })  
+    const userdata = await Userdata.findOne({ useremail: email }) 
 
-    if (!user) {
+    if (!user&&!userdata) {
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -212,8 +243,14 @@ exports.addIndustry = async (req, res) => {
         user.userindustry.push(ind);
       }
     });
+    industry.forEach((ind) => {
+      if (!userdata.userindustry.includes(ind) && ind !== "") {
+        userdata.userindustry.push(ind);
+      }
+    });
 
     await user.save();
+    await userdata.save();
 
     res.status(201).json({ message: "Industry added successfully", user });
   } catch (error) {
@@ -359,7 +396,6 @@ exports.getChatHistory = async (req, res) => {
 
 exports.deleteChatHistory = async (req, res) => {
   const { userId } = req.body;
-
   try {
     const result = await Chat.deleteMany({ userId });
     res.json({ message: "Chat history deleted successfully", result });
@@ -374,19 +410,18 @@ exports.updateProfile = async (req, res) => {
   const profileImage = req.file ? req.file.filename : null;
 
   try {
-    const existingUser = await User.findOne({ userId });
+    const existingUser = await Userdata.findOne({ useremail: email});
 
     if (!existingUser) {
       return res.status(404).json({ message: "User not found" });
     }
-
     existingUser.useremail = email;
     existingUser.userName = username;
     existingUser.userphoneNumber = phone;
 
     if (profileImage) {
       existingUser.profileImage = profileImage;
-    }
+    } 
 
     await existingUser.save();
 
@@ -395,5 +430,26 @@ exports.updateProfile = async (req, res) => {
     res
       .status(500)
       .json({ message: "Internal server error", error: err.message });
+  }
+}; 
+
+
+
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const { email } = req.body; // Get the user's email from the request body
+
+    // Find the user by email in the userdata schema
+    const user = await Userdata.findOneAndDelete({ useremail: email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User account deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
