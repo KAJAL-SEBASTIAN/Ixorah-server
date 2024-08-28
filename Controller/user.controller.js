@@ -125,7 +125,7 @@ exports.resetPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
 
-    const user = await User.findOne({ useremail: email });
+    const user = await Userdata.findOne({ useremail: email });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid email" });
@@ -259,80 +259,6 @@ exports.addIndustry = async (req, res) => {
   }
 };
 
-// exports.sendMessage = async (req, res) => {
-//   const { userId, message } = req.body;
-//   if (!message || !userId) {
-//     return res.status(400).send('Message and userId are required');
-//   }
-
-//   try {
-//     // Check if the userId exists in the database
-
-//     const response = await axios.post(
-//       'https://api-inference.huggingface.co/models/gpt2',
-//       { inputs: message },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${process.env.HUGGING_FACE_API_TOKEN}`,
-//           'Content-Type': 'application/json'
-//         }
-//       }
-//     );
-
-//     const chatbotReply = response.data[0].generated_text;
-
-//     const newChat = new Chat({
-//       userId,
-//       message,
-//       reply: chatbotReply,
-//       timestamp: new Date(),
-//     });
-
-//     await newChat.save();
-
-//     // Emit the new message to the specific user
-//     req.io.to(userId).emit('newMessage', newChat);
-
-//     res.json(newChat);
-//   } catch (error) {
-//     res.status(500).send(error.message);
-//   }
-// };
-
-// exports.getChatHistory = async (req, res) => {
-//   const { userId } = req.params;
-//   try {
-//       const chats = await Chat.find({ userId }).sort({ timestamp: 1 });
-//       res.json(chats);
-//   } catch (error) {
-//       res.status(500).send(error.message);
-//   }}
-
-// exports.sendMessage = async (req, res) => {
-
-//   try {
-//     const response = await openai.chat.completions.create({
-//       model: 'gpt-4o', // Use a model available in the free tier
-//       messages: [
-//         { role: 'user', content:"what is java" },
-//       ],
-//       max_tokens: 30, // Adjust the max tokens as needed
-//     });
-// console.log(response);
-//     res.json({
-//       reply: response.choices[0].message.content.trim(),
-//     });
-//   } catch (error) {
-//     if (error.response && error.response.status === 429) {
-//       // Handle rate limit error
-//       res.status(429).json({ error: 'Rate limit exceeded. Please try again later.' });
-//     } else {
-//       // Handle other errors
-//       console.error(error);
-//       res.status(500).json({ error: 'Something went wrong' });
-//     }
-//   }
-// };
 
 exports.sendMessage = async (req, res) => {
   const { userId, message } = req.body;
